@@ -1,0 +1,17 @@
+{
+  "name": "umawa-services",
+  "version": "1.0.0",
+  "description": "An example to showcase a REST server with MongoDB (Mongolab) & Restify",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Arvind Ravulavaru",
+  "license": "MIT",
+  "url": "http://thejackalofjavascript.com",
+  "devDependencies": {
+    "mongojs": "^0.12.1",
+    "restify": "^2.8.5"
+  }
+}
