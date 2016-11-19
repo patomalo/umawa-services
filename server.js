@@ -1,15 +1,26 @@
 var me=this;
 var restify = require('restify');
-var mongojs = require('mongojs');
+var restifyMongoose = require('restify-mongoose');
+var mongoose = require('mongoose');
 var eventEmitter = require('events').EventEmitter;
-var db = mongojs('mongodb://umawa:umawa@ds159237.mlab.com:59237/umawa', ['pipes','nodes','events']);
+mongoose.connect('mongodb://umawa:umawa@ds159237.mlab.com:59237/umawa');
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+    //DEBUG
+    console.log('Connected');
+});
+var Pipes = require('./Pipes');
+var pipes = restifyMongoose(Pipes);
 // Server
 var server = restify.createServer();
-var commonCallback=function (err, data) {
-    res.writeHead(200, {
-        'Content-Type': 'application/json; charset=utf-8'
-    });
-    res.end(JSON.stringify(data));
+var getCommonCallback=function(res){
+    return function (err, data) {
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8'
+        });
+        res.end(JSON.stringify(data));
+    }
 };
 var mergeData=function(baseData,newData){
     var updateData = {};
@@ -26,40 +37,15 @@ var eventNotification = new eventEmitter;
 eventNotification.on("brokenPipe", function (m) {
     console.log(m);
 });
+//(pipes) individualSensor
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
 server.use(restify.bodyParser());
-/**
-(Pipes) Individual Sensor
-*/
-//Gets indivual Sensor data
-server.get("/individualSensor", function (req, res, next) {
-    db.pipes.findOne({
-        slaveId: req.params.slaveId
-    },commonCallback);
-    return next();
-});
-//Creates a new individual sensor
-server.post('/individualSensor', function (req, res, next) {
-    var individualSensor = req.params;
-    db.pipes.save(individualSensor,commonCallback);
-    return next();
-});
-//Updates an individual sensor
-server.put('/individualSensor/:slaveId', function (req, res, next) {
-    // get the existing individualSensor
-    db.pipes.findOne({
-        slaveId: req.params.slaveId
-    }, function (err, data) {
-        var updateData=me.mergeData(data,req.params);
-        db.pipes.update({
-            slaveId: req.params.slaveId
-        }, updateData, {
-            multi: false
-        }, commonCallback);
-    });
-    return next();
-});
+server.get('/individualSensor', pipes.query());
+server.get('/individualSensor/:slaveId', pipes.detail());
+server.post('/individualSensor', pipes.insert());
+server.del('/individualSensor/:slaveId', pipes.remove());
+//TODO: Move to mongoose-restify
 /**
 (Nodes) nodeSensor
 */
@@ -67,20 +53,20 @@ server.put('/individualSensor/:slaveId', function (req, res, next) {
 server.get("/nodeSensor", function (req, res, next) {
     db.nodes.findOne({
         masterId: req.params.masterId
-    },commonCallback);
+    },getCommonCallback(res));
     return next();
 });
 //Gets indivual nodeSensor byId
 server.get('/nodeSensor/:masterId', function (req, res, next) {
     db.nodes.findOne({
         masterId: req.params.masterId
-    }, commonCallback);
+    }, getCommonCallback(res));
     return next();
 });
 //Creates a new nodeSensor
 server.post('/nodeSensor', function (req, res, next) {
     var nodeSensor = req.params;
-    db.nodes.save(nodeSensor,commonCallback);
+    db.nodes.save(nodeSensor,getCommonCallback(res));
     return next();
 });
 //Updates an nodeSensor
@@ -94,10 +80,11 @@ server.put('/individualSensor/:slaveId', function (req, res, next) {
             slaveId: req.params.slaveId
         }, updateData, {
             multi: false
-        }, commonCallback);
+        }, getCommonCallback(res));
     });
     return next();
 });
+//TODO: Move to mongoose-restify
 /**
 (Events) Individual Sensor
 */
@@ -108,7 +95,7 @@ server.get('/eventsBySlave/:slaveId', function (req, res, next) {
         "timestamp": {
             "$gte": new Date(req.params.fromTimestamp),
             "$lt": new Date(req.params.toTimestamp)}
-        }, commonCallback);
+        }, getCommonCallback(res));
     return next();
 });
 //Gets data from a sensor between timestamps by master sensor
@@ -118,13 +105,14 @@ server.get('/eventsByMaster/:masterId', function (req, res, next) {
         "timestamp": {
             "$gte": new Date(req.params.fromTimestamp),
             "$lt": new Date(req.params.toTimestamp)}
-        }, commonCallback);
+        }, getCommonCallback(res));
     return next();
 });
+//TODO: Move to mongoose-restify
 //Saves a new event
 server.post('/nodeSensor', function (req, res, next) {
     var nodeSensor = req.params;
-    db.nodes.save(nodeSensor,commonCallback);
+    db.nodes.save(nodeSensor,getCommonCallback(res));
     return next();
 });
 setInterval(function(){ 

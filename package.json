@@ -12,6 +12,7 @@
   "url": "http://thejackalofjavascript.com",
   "devDependencies": {
     "mongojs": "^0.12.1",
+    "mongoose": "^4.6.8",
     "restify": "^2.8.5"
   }
 }
