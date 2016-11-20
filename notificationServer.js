@@ -1,7 +1,10 @@
+var me=this;
 var http = require('http');
 var fs = require('fs');
 var cors = require('./cors');
 var calculateInterval = 2000;
+var Events = require('./model/Events');
+
 
 function sendServerSendEvent(req, res) {
 	res.writeHead(200, {
@@ -41,7 +44,6 @@ http.createServer(function(req, res) {
 		res.writeHead(200, {
 			'Content-Type' : 'text/html'
 		});
-		//res.write(fs.readFileSync(__dirname + '/index.html'));
 		res.end();
 	}
 }).listen(8080);

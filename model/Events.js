@@ -18,15 +18,4 @@ eventsSchema.pre('save', function(next) {
   next();
 });
 var Events = mongoose.model('events', eventsSchema);
-Events.aggregate([{
-    "$sort": {
-      "timestamp": -1
-    }
-  }, {
-    "$limit": 1
-  }],
-  function(err,result) {
-    console.log(err);
-  }
-);
 module.exports = Events;

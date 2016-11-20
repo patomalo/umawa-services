@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var Schema=mongoose.Schema;
 var pipesSchema=new Schema({
+    masterId:Number,
     slaveId:Number,
     slaveName:String,
     lat:Number,
