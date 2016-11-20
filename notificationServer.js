@@ -1,12 +1,21 @@
 var me=this;
+var restify = require('restify');
+var restifyMongoose = require('restify-mongoose');
+var mongoose = require('mongoose');
 var http = require('http');
 var fs = require('fs');
 var cors = require('./cors');
 var calculateInterval = 2000;
 var Events = require('./model/Events');
-
+mongoose.connect('mongodb://umawa:umawa@ds159237.mlab.com:59237/umawa',['events']);
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+    console.log('Connected');
+});
 
 function sendServerSendEvent(req, res) {
+	console.log('SEND SERVER EVENT');
 	res.writeHead(200, {
 		'Content-Type' : 'text/event-stream',
 		'Cache-Control' : 'no-cache',
@@ -15,14 +24,33 @@ function sendServerSendEvent(req, res) {
 		'Access-Control-Allow-Headers':'Origin, X-Requested-With, Content-Type, Accept'
 	});
 	setInterval(function() {
-		//TODO: Calculate if there's a broken pipe
-		var sseId = (new Date()).toLocaleTimeString();
-		writeServerSendEvent(res,{
-			pipeId:'101',
-			timestamp:Date.now(),
-			lat:0,
-			lng:0,
-			deltaCalculated:0.4
+		var returnedData={};
+		var i;
+		Events.aggregate([{
+	    	"$group": {
+	    		"_id": {"slaveId":"$slaveId"},
+	    		"timestamp": { "$max": "$timestamp" },
+	    		"humiditySensorRate": { "$max": "$humiditySensorRate" },
+	    		"pressionSensorRate": { "$max": "$pressionSensorRate" },
+	    		"floorHumidityRate": { "$max": "$floorHumidityRate" }
+	    	}
+	    }, {
+			"$match": {
+				"pressionSensorRate": {
+					"$lte": 0.5
+				} 
+			}
+		}], function(err, data) {
+			if (err){
+				console.log(err);
+				throw err;
+			}
+			if(data.length>0){
+				for(i=0;i<data.length;i++){
+					console.log('Send broken pipe event: '+data);
+					writeServerSendEvent(res,data);
+				}
+			}
 		});
  	}, calculateInterval);
 }
