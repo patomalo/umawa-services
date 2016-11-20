@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var http = require('http');
 var fs = require('fs');
 var cors = require('./cors');
-var calculateInterval = 2000;
+var calculateInterval = 5000;
 var Events = require('./model/Events');
 mongoose.connect('mongodb://umawa:umawa@ds159237.mlab.com:59237/umawa',['events']);
 var db = mongoose.connection;
@@ -15,7 +15,6 @@ db.once('open', function() {
 });
 
 function sendServerSendEvent(req, res) {
-	console.log('SEND SERVER EVENT');
 	res.writeHead(200, {
 		'Content-Type' : 'text/event-stream',
 		'Cache-Control' : 'no-cache',
@@ -23,18 +22,18 @@ function sendServerSendEvent(req, res) {
 		'Access-Control-Allow-Origin':'*',
 		'Access-Control-Allow-Headers':'Origin, X-Requested-With, Content-Type, Accept'
 	});
-	setInterval(function() {
+	setInterval(function(){
 		var returnedData={};
 		var i;
 		Events.aggregate([{
-	    	"$group": {
-	    		"_id": {"slaveId":"$slaveId"},
-	    		"timestamp": { "$max": "$timestamp" },
-	    		"humiditySensorRate": { "$max": "$humiditySensorRate" },
-	    		"pressionSensorRate": { "$max": "$pressionSensorRate" },
-	    		"floorHumidityRate": { "$max": "$floorHumidityRate" }
-	    	}
-	    }, {
+		    "$group": {
+		    	"_id": {"slaveId":"$slaveId"},
+		    	"timestamp": { "$max": "$timestamp" },
+		    	"humiditySensorRate": { "$max": "$humiditySensorRate" },
+		    	"pressionSensorRate": { "$max": "$pressionSensorRate" },
+		    	"soilHumidityRate": { "$max": "$soilHumidityRate" }
+			}
+		}, {
 			"$match": {
 				"pressionSensorRate": {
 					"$lte": 0.5
@@ -47,15 +46,15 @@ function sendServerSendEvent(req, res) {
 			}
 			if(data.length>0){
 				for(i=0;i<data.length;i++){
-					console.log('Send broken pipe event: '+data);
-					writeServerSendEvent(res,data);
+					console.log('[EVENT] '+(new Date)+': '+JSON.stringify(data[i]));
+					writeServerSendEvent(res,data[i]);
 				}
 			}
 		});
- 	}, calculateInterval);
+	}, calculateInterval);
 }
 
-function writeServerSendEvent(res, sseId, data) {
+function writeServerSendEvent(res, data) {
 	var jsonVar=JSON.stringify(data);
 	res.write("data:"+jsonVar+'\n\n');
 }
