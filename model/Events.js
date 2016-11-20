@@ -9,7 +9,6 @@ var eventsSchema=new Schema({
     pressionSensorRate:Number,
     floorHumidityRate:Number
 });
-
 eventsSchema.pre('save', function(next) {
   var currentDate = Date.now();
   // if created_at doesn't exist, add to that field
@@ -19,4 +18,15 @@ eventsSchema.pre('save', function(next) {
   next();
 });
 var Events = mongoose.model('events', eventsSchema);
+Events.aggregate([{
+    "$sort": {
+      "timestamp": -1
+    }
+  }, {
+    "$limit": 1
+  }],
+  function(err,result) {
+    console.log(err);
+  }
+);
 module.exports = Events;

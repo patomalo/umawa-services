@@ -1,3 +1,4 @@
+var me=this;
 var mongoose = require('mongoose');
 var Schema=mongoose.Schema;
 var nodesSchema=new Schema({
@@ -16,4 +17,16 @@ nodesSchema.pre('save', function(next) {
   next();
 });
 var Nodes = mongoose.model('nodes', nodesSchema);
+Nodes.aggregate([{
+        "$lookup": {
+            from: "pipes",
+            localField: "masterId",
+            foreignField: "masterId",
+            as: "slaves"
+        }
+    }],
+    function(err,result) {
+      console.log(err);
+    }
+);
 module.exports = Nodes;
